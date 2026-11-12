@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export async function request(endpoint, options = {}) {
   const url = `${API_BASE_URL.replace(/\/+$/, '')}/${endpoint.replace(/^\/+/, '')}`;
@@ -27,7 +27,13 @@ export async function request(endpoint, options = {}) {
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      const errorMessage = data.message || (data.errors && data.errors[0]?.message) || `Error ${response.status}: ${response.statusText}`;
+      const fallbackMessage = response.status === 404
+        ? 'Cannot connect to backend server. Please ensure the backend is running on http://localhost:5000'
+        : response.statusText
+        ? `Error ${response.status}: ${response.statusText}`
+        : `Request failed with status ${response.status}`;
+
+      const errorMessage = data.message || (data.errors && data.errors[0]?.message) || fallbackMessage;
       const error = new Error(errorMessage);
       error.status = response.status;
       error.data = data;
@@ -40,7 +46,7 @@ export async function request(endpoint, options = {}) {
       throw err;
     }
     // Network or connection error
-    throw new Error(err.message || 'Network request failed. Is the server running?');
+    throw new Error('Unable to reach server. Please make sure the backend server is running on http://localhost:5000');
   }
 }
 
